@@ -4,7 +4,7 @@
 **********************************************************
 *
 * DataSubmitter
-* version: 20180413b
+* version: 20180413c
 *
 * By: Nicola Ferralis <feranick@hotmail.com>
 *
@@ -12,23 +12,31 @@
 '''
 #print(__doc__)
 
-import sys, math, json, os.path, time
+import configparser, logging, sys, math, json, os.path, time
+from pathlib import Path
+from datetime import datetime
 import pandas as pd
 global MongoDBhost
 
 def main():
+    conf = Configuration()
+    if os.path.isfile(conf.configFile) is False:
+        print("Configuration file does not exist: Creating one.")
+        conf.createConfig()
+        return
+    conf.readConfig(conf.configFile)
+    
+    '''
     if len(sys.argv)<3 or os.path.isfile(sys.argv[2]) == False:
         print(__doc__)
-        print(' Usage:\n  python3 DataSubmitter.py <lab-identifier> <mongoFile>\n')
+        print(' Usage:\n  python3 DataSubmitter.py\n')
         return
-    
-    lab = sys.argv[1]
-    mongoFile = sys.argv[2]
+    '''
     
     #************************************
     ''' Read from T/RH sensor '''
     #************************************
-    dc = DataCollector(lab, lab, lab)
+    dc = DataCollector(conf)
     data = dc.getData()
     dc.printUI()
     jsonData = dc.makeJson()
@@ -36,23 +44,23 @@ def main():
     #************************************
     ''' Push to MongoDB '''
     #************************************
-    conn = DataSubmitterMongoDB(jsonData,mongoFile)
+    conn = DataSubmitterMongoDB(jsonData,conf)
     conn.pushToMongoDB()
 
 #************************************
 ''' Class DataCollector '''
 #************************************
 class DataCollector:
-    def __init__(self, institution, lab, equipment):
-        self.institution = institution
-        self.lab = lab
-        self.equipment = equipment
+    def __init__(self, config):
+        self.institution = config.institution
+        self.lab = config.lab
+        self.equipment = config.equipment
         self.date = time.strftime("%Y%m%d")
         self.time = time.strftime("%H:%M:%S")
         self.ip = getIP()
         self.data = []
-        self.header = ["header0", "header1"]
-        self.type = 1 #data format for MongoDB
+        self.header = config.headers
+        self.type = config.dataType
 
     #************************************
     ''' Collect Data '''
@@ -112,42 +120,133 @@ class DataCollector:
 ''' Class Database '''
 #************************************
 class DataSubmitterMongoDB:
-    def __init__(self, jsonData, file):
+    def __init__(self, jsonData, config):
+        self.config = config
         self.jsonData = jsonData
-        with open(file, 'r') as f:
-            f.readline()
-            self.hostname = f.readline().rstrip('\n')
-            f.readline()
-            self.port_num = f.readline().rstrip('\n')
-            f.readline()
-            self.dbname = f.readline().rstrip('\n')
-            f.readline()
-            self.username = f.readline().rstrip('\n')
-            f.readline()
-            self.password = f.readline().rstrip('\n')
 
     def connectDB(self):
         from pymongo import MongoClient
-        client = MongoClient(self.hostname, int(self.port_num))
-        auth_status = client[self.dbname].authenticate(self.username, self.password, mechanism='SCRAM-SHA-1')
+        client = MongoClient(self.config.DbHostname, int(self.config.DbPortNumber))
+        auth_status = client[self.config.DbName].authenticate(self.config.DbUsername,
+            self.config.DbPassword, mechanism='SCRAM-SHA-1')
         print("\n Pushing to MongoDB: Authentication status = {0}".format(auth_status))
         return client
 
     def printAuthInfo(self):
-        print(self.hostname)
-        print(self.port_num)
-        print(self.dbname)
-        print(self.username)
-        print(self.password)
+        print(self.config.DbHostname)
+        print(self.config.DbPortNumber)
+        print(self.config.DbName)
+        print(self.config.DbUsername)
+        print(self.config.DbPassword)
     
     def pushToMongoDB(self):
         client = self.connectDB()
-        db = client[self.dbname]
+        db = client[self.config.DbName]
         try:
             db_entry = db.EnvTrack.insert_one(json.loads(self.jsonData))
             print(" Data entry successful (id:",db_entry.inserted_id,")\n")
         except:
             print(" Data entry failed.\n")
+
+####################################################################
+# Configuration
+####################################################################
+class Configuration():
+    def __init__(self):
+        self.home = str(Path.home())+"/"
+        self.configFile = self.home+"DataSubmitter.ini"
+        self.generalFolder = self.home+"DataSubmitter/"
+        Path(self.generalFolder).mkdir(parents=True, exist_ok=True)
+        self.logFile = self.generalFolder+"DataSubmitter.log"
+        #self.dataFolder = self.generalFolder + 'data/'
+        #Path(self.dataFolder).mkdir(parents=True, exist_ok=True)
+        #self.customConfigFolder = self.generalFolder+'saved_configurations'
+        #Path(self.customConfigFolder).mkdir(parents=True, exist_ok=True)
+        self.conf = configparser.ConfigParser()
+        self.conf.optionxform = str
+    
+    # Create configuration file
+    def createConfig(self):
+        try:
+            self.defineSystem()
+            self.defineInstrumentation()
+            self.defineData()
+            self.defineConfDM()
+            with open(self.configFile, 'w') as configfile:
+                self.conf.write(configfile)
+        except:
+            print("Error in creating configuration file")
+
+    # Hadrcoded default definitions for the confoguration file
+    def defineSystem(self):
+        self.conf['System'] = {
+            'appVersion' : 0,
+            'loggingLevel' : logging.INFO,
+            'loggingFilename' : self.logFile,
+            }
+    def defineInstrumentation(self):
+        self.conf['Instrumentation'] = {
+            'institution' : 'institution1',
+            'lab' : 'lab1',
+            'equipment' : 'equipment1',
+            }
+    def defineData(self):
+        self.conf['Data'] = {
+            'headers' : ['header0','header1'],
+            'dataType' : 0,
+            }
+    def defineConfDM(self):
+        self.conf['DM'] = {
+            'DbHostname' : "localhost",
+            'DbPortNumber' : "7101",
+            'DbName' : "Tata",
+            'DbUsername' : "user1",
+            'DbPassword' : "user1",
+            }
+
+    # Read configuration file into usable variables
+    def readConfig(self, configFile):
+        self.conf.read(configFile)
+        self.sysConfig = self.conf['System']
+        self.appVersion = self.sysConfig['appVersion']
+        try:
+            self.instrumentationConfig = self.conf['Instrumentation']
+            self.dataConfig = self.conf['Data']
+            self.dmConfig = self.conf['DM']
+
+            self.loggingLevel = self.sysConfig['loggingLevel']
+            self.loggingFilename = self.sysConfig['loggingFilename']
+
+            self.institution = self.instrumentationConfig['institution']
+            self.lab = self.instrumentationConfig['lab']
+            self.equipment = self.instrumentationConfig['equipment']
+
+            self.headers = eval(self.dataConfig['headers'])
+            self.dataType = self.dataConfig['dataType']
+            
+            self.DbHostname = self.dmConfig['DbHostname']
+            self.DbPortNumber = self.conf.getint('DM','DbPortNumber')
+            self.DbName = self.dmConfig['DbName']
+            self.DbUsername = self.dmConfig['DbUsername']
+            self.DbPassword = self.dmConfig['DbPassword']
+        
+        except:
+            print("Configuration file is for an earlier version of the software")
+            oldConfigFile = str(os.path.splitext(configFile)[0] + "_" +\
+                    str(datetime.now().strftime('%Y%m%d-%H%M%S'))+".ini")
+            print("Old config file backup: ",oldConfigFile)
+            os.rename(configFile, oldConfigFile )
+            print("Creating a new config file.")
+            self.createConfig()
+            self.readConfig(configFile)
+
+    # Save current parameters in configuration file
+    def saveConfig(self, configFile):
+        try:
+            with open(configFile, 'w') as configfile:
+                self.conf.write(configfile)
+        except:
+            print("Error in saving parameters")
 
 #************************************
 ''' Get system IP '''
