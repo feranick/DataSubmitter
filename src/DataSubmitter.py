@@ -4,7 +4,7 @@
 **********************************************************
 *
 * DataSubmitter
-* version: 20180423e
+* version: 20180423f
 *
 * By: Nicola Ferralis <feranick@hotmail.com>
 *
@@ -66,8 +66,11 @@ class NewFileHandler(FileSystemEventHandler):
         #************************************
         ''' Push to MongoDB '''
         #************************************
-        conn = DataSubmitterMongoDB(jsonData)
-        conn.pushToMongoDB()
+        try:
+            conn = DataSubmitterMongoDB(jsonData)
+            conn.pushToMongoDB()
+        except:
+            print("\n Submission to database failed!\n")
 
 #************************************
 ''' Class DataCollector '''
@@ -94,9 +97,7 @@ class DataCollector:
         self.data.extend([self.institution, self.lab, self.equipment, self.ip, self.date, self.time, self.file])
         try:
             with open(self.file) as f:
-                print(self.file)
                 lines = np.loadtxt(f, unpack=True)
-            print(lines)
             self.data.extend(lines)
         except:
             self.data.extend([[0.0,0.0][0.0,0.0]])
