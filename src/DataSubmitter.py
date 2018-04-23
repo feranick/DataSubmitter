@@ -22,6 +22,9 @@ from watchdog.events import LoggingEventHandler
 from watchdog.events import FileSystemEvent, FileCreatedEvent, FileSystemEventHandler
 global MongoDBhost
 
+#************************************
+''' Main '''
+#************************************
 def main():
     conf = Configuration()
     if os.path.isfile(conf.configFile) is False:
@@ -46,30 +49,24 @@ def main():
     observer.join()
 
 #************************************************
+''' Class NewFileHandler '''
 ''' Submission method, once data is detected '''
 #************************************************
-def sumbmitData(file):
-    #************************************
-    ''' Manage data'''
-    #************************************
-    dc = DataCollector(file)
-    data = dc.getData()
-    dc.printUI()
-    jsonData = dc.makeJson()
-    
-    #************************************
-    ''' Push to MongoDB '''
-    #************************************
-    conn = DataSubmitterMongoDB(jsonData)
-    conn.pushToMongoDB()
-
-#************************************
-''' Class NewFileHandler '''
-#************************************
 class NewFileHandler(FileSystemEventHandler):
     def on_created(self, event):
-        print(event.src_path[2:])
-        sumbmitData(event.src_path[2:])
+        #************************************
+        ''' Manage data'''
+        #************************************
+        dc = DataCollector(event.src_path[2:]e)
+        data = dc.getData()
+        dc.printUI()
+        jsonData = dc.makeJson()
+    
+        #************************************
+        ''' Push to MongoDB '''
+        #************************************
+        conn = DataSubmitterMongoDB(jsonData)
+        conn.pushToMongoDB()
 
 #************************************
 ''' Class DataCollector '''
