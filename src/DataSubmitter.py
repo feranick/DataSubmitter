@@ -4,7 +4,7 @@
 **********************************************************
 *
 * DataSubmitter
-* version: 20180423a
+* version: 20180423b
 *
 * By: Nicola Ferralis <feranick@hotmail.com>
 *
@@ -13,9 +13,12 @@
 #print(__doc__)
 
 import configparser, logging, sys, math, json, os.path, time
+import pandas as pd
 from pathlib import Path
 from datetime import datetime
-import pandas as pd
+from watchdog.observers import Observer
+from watchdog.events import LoggingEventHandler
+from watchdog.events import FileSystemEvent, FileCreatedEvent, FileSystemEventHandler
 global MongoDBhost
 
 def main():
@@ -25,16 +28,30 @@ def main():
         conf.createConfig()
         return
     conf.readConfig(conf.configFile)
-    sumbmitData(conf)
+
+    #************************************
+    ''' Launch observer'''
+    #************************************
+    path = sys.argv[1] if len(sys.argv) > 1 else '.'
+    event_handler = NewFileHandler()
+    observer = Observer()
+    observer.schedule(event_handler, path, recursive=True)
+    observer.start()
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        observer.stop()
+    observer.join()
 
 #************************************************
 ''' Submission method, once data is detected '''
 #************************************************
-def sumbmitData(conf):
+def sumbmitData(file):
     #************************************
     ''' Manage data'''
     #************************************
-    dc = DataCollector(conf)
+    dc = DataCollector(file)
     data = dc.getData()
     dc.printUI()
     jsonData = dc.makeJson()
@@ -42,17 +59,28 @@ def sumbmitData(conf):
     #************************************
     ''' Push to MongoDB '''
     #************************************
-    conn = DataSubmitterMongoDB(jsonData,conf)
+    conn = DataSubmitterMongoDB(jsonData)
     conn.pushToMongoDB()
+
+#************************************
+''' Class NewFileHandler '''
+#************************************
+class NewFileHandler(FileSystemEventHandler):
+    def on_created(self, event):
+        print(event.src_path[2:])
+        sumbmitData(event.src_path[2:])
 
 #************************************
 ''' Class DataCollector '''
 #************************************
 class DataCollector:
-    def __init__(self, config):
+    def __init__(self, file):
+        config = Configuration()
+        config.readConfig(config.configFile)
         self.institution = config.institution
         self.lab = config.lab
         self.equipment = config.equipment
+        self.file = file
         self.date = time.strftime("%Y%m%d")
         self.time = time.strftime("%H:%M:%S")
         self.ip = getIP()
@@ -64,7 +92,7 @@ class DataCollector:
     ''' Collect Data '''
     #************************************
     def getData(self):
-        self.data.extend([self.institution, self.lab, self.equipment, self.ip, self.date, self.time])
+        self.data.extend([self.institution, self.lab, self.equipment, self.ip, self.date, self.time, self.file])
         try:
             self.data.extend([[1,2],[3,4]])
         except:
@@ -74,7 +102,7 @@ class DataCollector:
     def formatData(self, type):
         jsonData = {}
         for i in range(len(self.header)):
-            jsonData.update({self.header[i] : self.data[6+i]})
+            jsonData.update({self.header[i] : self.data[7+i]})
         if type == 0:
             listData = jsonData
         else:
@@ -95,6 +123,7 @@ class DataCollector:
             'IP' : self.data[3],
             'date' : self.data[4],
             'time' : self.data[5],
+            'file' : self.data[6],
             }
         jsonData.update(self.formatData(self.type))
         print(" JSON Data:\n",jsonData)
@@ -110,16 +139,18 @@ class DataCollector:
         print(" IP: ", self.ip)
         print(" Date: ", self.date)
         print(" Time: ", self.time)
+        print(" File: ", self.file)
         for i in range(len(self.header)):
-            print(" {0} = {1} ".format(self.header[i], self.data[6+i]))
+            print(" {0} = {1} ".format(self.header[i], self.data[7+i]))
         print("")
 
 #************************************
 ''' Class Database '''
 #************************************
 class DataSubmitterMongoDB:
-    def __init__(self, jsonData, config):
-        self.config = config
+    def __init__(self, jsonData):
+        self.config = Configuration()
+        self.config.readConfig(self.config.configFile)
         self.jsonData = jsonData
 
     def connectDB(self):
