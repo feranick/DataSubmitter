@@ -4,7 +4,7 @@
 **********************************************************
 *
 * DataSubmitter
-* version: 20180413c
+* version: 20180423a
 *
 * By: Nicola Ferralis <feranick@hotmail.com>
 *
@@ -25,16 +25,14 @@ def main():
         conf.createConfig()
         return
     conf.readConfig(conf.configFile)
-    
-    '''
-    if len(sys.argv)<3 or os.path.isfile(sys.argv[2]) == False:
-        print(__doc__)
-        print(' Usage:\n  python3 DataSubmitter.py\n')
-        return
-    '''
-    
+    sumbmitData(conf)
+
+#************************************************
+''' Submission method, once data is detected '''
+#************************************************
+def sumbmitData(conf):
     #************************************
-    ''' Read from T/RH sensor '''
+    ''' Manage data'''
     #************************************
     dc = DataCollector(conf)
     data = dc.getData()
