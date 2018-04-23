@@ -4,7 +4,7 @@
 **********************************************************
 *
 * DataSubmitter
-* version: 20180423c
+* version: 20180423e
 *
 * By: Nicola Ferralis <feranick@hotmail.com>
 *
@@ -36,7 +36,8 @@ def main():
     #************************************
     ''' Launch observer'''
     #************************************
-    path = sys.argv[1] if len(sys.argv) > 1 else '.'
+    path = conf.dataFolder
+    #path = sys.argv[1] if len(sys.argv) > 1 else '.'
     event_handler = NewFileHandler()
     observer = Observer()
     observer.schedule(event_handler, path, recursive=True)
@@ -57,7 +58,7 @@ class NewFileHandler(FileSystemEventHandler):
         #************************************
         ''' Manage data'''
         #************************************
-        dc = DataCollector(event.src_path[2:])
+        dc = DataCollector(event.src_path[:])
         data = dc.getData()
         dc.printUI()
         jsonData = dc.makeJson()
@@ -93,6 +94,7 @@ class DataCollector:
         self.data.extend([self.institution, self.lab, self.equipment, self.ip, self.date, self.time, self.file])
         try:
             with open(self.file) as f:
+                print(self.file)
                 lines = np.loadtxt(f, unpack=True)
             print(lines)
             self.data.extend(lines)
@@ -188,10 +190,6 @@ class Configuration():
         self.generalFolder = self.home+"DataSubmitter/"
         Path(self.generalFolder).mkdir(parents=True, exist_ok=True)
         self.logFile = self.generalFolder+"DataSubmitter.log"
-        #self.dataFolder = self.generalFolder + 'data/'
-        #Path(self.dataFolder).mkdir(parents=True, exist_ok=True)
-        #self.customConfigFolder = self.generalFolder+'saved_configurations'
-        #Path(self.customConfigFolder).mkdir(parents=True, exist_ok=True)
         self.conf = configparser.ConfigParser()
         self.conf.optionxform = str
     
@@ -213,6 +211,7 @@ class Configuration():
             'appVersion' : 0,
             'loggingLevel' : logging.INFO,
             'loggingFilename' : self.logFile,
+            'dataFolder' : ".",
             }
     def defineInstrumentation(self):
         self.conf['Instrumentation'] = {
@@ -246,6 +245,7 @@ class Configuration():
 
             self.loggingLevel = self.sysConfig['loggingLevel']
             self.loggingFilename = self.sysConfig['loggingFilename']
+            self.dataFolder = self.sysConfig['dataFolder']
 
             self.institution = self.instrumentationConfig['institution']
             self.lab = self.instrumentationConfig['lab']
