@@ -57,7 +57,7 @@ class NewFileHandler(FileSystemEventHandler):
         #************************************
         ''' Manage data'''
         #************************************
-        dc = DataCollector(event.src_path[2:]e)
+        dc = DataCollector(event.src_path[2:])
         data = dc.getData()
         dc.printUI()
         jsonData = dc.makeJson()
