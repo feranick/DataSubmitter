@@ -4,7 +4,7 @@
 **********************************************************
 *
 * DataSubmitter
-* version: 20180423b
+* version: 20180423c
 *
 * By: Nicola Ferralis <feranick@hotmail.com>
 *
@@ -14,6 +14,7 @@
 
 import configparser, logging, sys, math, json, os.path, time
 import pandas as pd
+import numpy as np
 from pathlib import Path
 from datetime import datetime
 from watchdog.observers import Observer
@@ -94,7 +95,10 @@ class DataCollector:
     def getData(self):
         self.data.extend([self.institution, self.lab, self.equipment, self.ip, self.date, self.time, self.file])
         try:
-            self.data.extend([[1,2],[3,4]])
+            with open(self.file) as f:
+                lines = np.loadtxt(f, unpack=True)
+            print(lines)
+            self.data.extend(lines)
         except:
             self.data.extend([[0.0,0.0][0.0,0.0]])
         return self.data
