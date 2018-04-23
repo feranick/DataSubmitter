@@ -29,7 +29,6 @@ def main():
     if os.path.isfile(conf.configFile) is False:
         print("Configuration file does not exist: Creating one.")
         conf.createConfig()
-        return
     conf.readConfig(conf.configFile)
 
     #************************************
