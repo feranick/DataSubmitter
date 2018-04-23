@@ -20,7 +20,6 @@ from datetime import datetime
 from watchdog.observers import Observer
 from watchdog.events import LoggingEventHandler
 from watchdog.events import FileSystemEvent, FileCreatedEvent, FileSystemEventHandler
-global MongoDBhost
 
 #************************************
 ''' Main '''
