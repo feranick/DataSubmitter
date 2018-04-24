@@ -4,7 +4,7 @@
 **********************************************************
 *
 * DataSubmitter
-* version: 20180423f
+* version: 20180424a
 *
 * By: Nicola Ferralis <feranick@hotmail.com>
 *
@@ -96,15 +96,17 @@ class DataCollector:
         try:
             with open(self.file) as f:
                 lines = np.loadtxt(f, unpack=True)
+            self.data.extend(["True"])
             self.data.extend(lines)
         except:
-            self.data.extend([[0.0,0.0][0.0,0.0]])
+            self.data.extend(["False"])
+            self.data.extend([[0.0, 0.0], [0.0, 0.0]])
         return self.data
         
     def formatData(self, type):
         jsonData = {}
         for i in range(len(self.header)):
-            jsonData.update({self.header[i] : self.data[7+i]})
+            jsonData.update({self.header[i] : self.data[8+i]})
         if type == 0:
             listData = jsonData
         else:
@@ -126,6 +128,7 @@ class DataCollector:
             'date' : self.data[4],
             'time' : self.data[5],
             'file' : self.data[6],
+            'success' : self.data[7],
             }
         jsonData.update(self.formatData(self.type))
         print(" JSON Data:\n",jsonData)
@@ -142,8 +145,9 @@ class DataCollector:
         print(" Date: ", self.date)
         print(" Time: ", self.time)
         print(" File: ", self.file)
+        print(" Success: ", self.data[7])
         for i in range(len(self.header)):
-            print(" {0} = {1} ".format(self.header[i], self.data[7+i]))
+            print(" {0} = {1} ".format(self.header[i], self.data[8+i]))
         print("")
 
 #************************************
