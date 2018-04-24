@@ -188,7 +188,8 @@ class DataSubmitterMongoDB:
 ####################################################################
 class Configuration():
     def __init__(self):
-        self.home = str(Path.home())+"/"
+        #self.home = str(Path.home())+"/"
+        self.home = str(Path.cwd())+"/"
         self.configFile = self.home+"DataSubmitter.ini"
         self.generalFolder = self.home+"DataSubmitter/"
         Path(self.generalFolder).mkdir(parents=True, exist_ok=True)
