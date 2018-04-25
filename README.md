@@ -7,11 +7,15 @@ Automated data submission program for ASCII to mongo
     python3 DataSubmitter.py
 ### Installation with pip. 
 Create a wheel package (wheel module required):
+
     python3 setup bdist_wheel
+    
 Install directly:
+
     sudo pip3 install dist/DataSubmitter_...
 
 Launch from the terminal in the folder with data:
+
     DataSubmitter
 
 ### Launcher    
