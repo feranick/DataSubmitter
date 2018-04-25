@@ -4,13 +4,20 @@
 **********************************************************
 *
 * DataSubmitter
-* version: 20180424a
+* version: 20180425a
 *
 * By: Nicola Ferralis <feranick@hotmail.com>
 *
 ***********************************************************
 '''
 #print(__doc__)
+
+#***************************************************
+''' This is needed for installation through pip '''
+#***************************************************
+def DataSubmitter():
+    main()
+#***************************************************
 
 import configparser, logging, sys, math, json, os.path, time
 import pandas as pd
