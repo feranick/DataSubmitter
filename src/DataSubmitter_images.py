@@ -3,7 +3,7 @@
 '''
 **********************************************************
 *
-* DataSubmitter
+* DataSubmitter_images
 * version: 20180430a
 *
 * By: Nicola Ferralis <feranick@hotmail.com>
@@ -27,6 +27,7 @@ from datetime import datetime
 from watchdog.observers import Observer
 from watchdog.events import LoggingEventHandler
 from watchdog.events import FileSystemEvent, FileCreatedEvent, FileSystemEventHandler
+import base64
 
 #************************************
 ''' Main '''
@@ -93,37 +94,28 @@ class DataCollector:
         self.ip = getIP()
         self.data = []
         self.header = config.headers
-        self.type = config.dataType
+        self.encoding = config.encoding
 
     #************************************
     ''' Collect Data '''
     #************************************
     def getData(self):
-        self.data.extend([self.institution, self.lab, self.equipment, self.ip, self.date, self.time, self.file])
+        self.data.extend([self.institution, self.lab, self.equipment, self.ip, self.date, self.time, self.file, self.encoding])
         try:
-            with open(self.file) as f:
-                lines = np.loadtxt(f, unpack=True)
+            with open(self.file, "rb") as f:
+                lines = base64.b64encode(f.read())
             self.data.extend(["True"])
-            self.data.extend(lines)
+            self.data.extend([lines])
         except:
             self.data.extend(["False"])
-            self.data.extend([[0.0, 0.0], [0.0, 0.0]])
+            self.data.extend([[0.0, 0.0]])
         return self.data
         
-    def formatData(self, type):
+    def formatData(self):
         jsonData = {}
         for i in range(len(self.header)):
-            jsonData.update({self.header[i] : self.data[8+i]})
-        if type == 0:
+            jsonData.update({self.header[i] : self.data[9+i]})
             listData = jsonData
-        else:
-            import pandas as pd
-            dfData = pd.DataFrame(jsonData)
-            dfData = dfData[[self.header[0], self.header[1]]]
-            listData = dict(dfData.to_dict(orient='split'))
-            listData['columnlabel'] = listData.pop('columns')
-            listData['output'] = listData.pop('data')
-            del listData['index']
         return listData
         
     def makeJson(self):
@@ -135,11 +127,12 @@ class DataCollector:
             'date' : self.data[4],
             'time' : self.data[5],
             'file' : self.data[6],
-            'success' : self.data[7],
+            'encoding' : self.data[7],
+            'success' : self.data[8],
             }
-        jsonData.update(self.formatData(self.type))
-        print(" JSON Data:\n",jsonData)
-        return json.dumps(jsonData)
+        jsonData.update(self.formatData())
+        #print(" JSON Data:\n",jsonData)
+        return (jsonData)
 
     #************************************
     ''' Print Values on screen '''
@@ -152,9 +145,10 @@ class DataCollector:
         print(" Date: ", self.date)
         print(" Time: ", self.time)
         print(" File: ", self.file)
-        print(" Success: ", self.data[7])
-        for i in range(len(self.header)):
-            print(" {0} = {1} ".format(self.header[i], self.data[8+i]))
+        print(" Encoding: ", self.data[7])
+        print(" Success: ", self.data[8])
+        #for i in range(len(self.header)):
+        #    print(" {0} = {1} ".format(self.header[i], self.data[9+i]))
         print("")
 
 #************************************
@@ -197,10 +191,10 @@ class Configuration():
     def __init__(self):
         #self.home = str(Path.home())+"/"
         self.home = str(Path.cwd())+"/"
-        self.configFile = self.home+"DataSubmitter.ini"
+        self.configFile = self.home+"DataSubmitter_images.ini"
         self.generalFolder = self.home+"DataSubmitter/"
         Path(self.generalFolder).mkdir(parents=True, exist_ok=True)
-        self.logFile = self.generalFolder+"DataSubmitter.log"
+        self.logFile = self.generalFolder+"DataSubmitter_images.log"
         self.conf = configparser.ConfigParser()
         self.conf.optionxform = str
     
@@ -232,8 +226,8 @@ class Configuration():
             }
     def defineData(self):
         self.conf['Data'] = {
-            'headers' : ['header0','header1'],
-            'dataType' : 1,
+            'headers' : ['header0'],
+            'encoding' : 'base64.b64encode',
             }
     def defineConfDM(self):
         self.conf['DM'] = {
@@ -263,7 +257,7 @@ class Configuration():
             self.equipment = self.instrumentationConfig['equipment']
 
             self.headers = eval(self.dataConfig['headers'])
-            self.dataType = eval(self.dataConfig['dataType'])
+            self.encoding = self.dataConfig['encoding']
             
             self.DbHostname = self.dmConfig['DbHostname']
             self.DbPortNumber = self.conf.getint('DM','DbPortNumber')
