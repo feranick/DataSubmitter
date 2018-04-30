@@ -5,7 +5,7 @@ setup(
     packages=find_packages(),
     install_requires=['numpy', 'pandas','pymongo','watchdog',],
     entry_points={'console_scripts' : ['DataSubmitter=DataSubmitter:DataSubmitter']},
-    py_modules=['DataSubmitter'],
+    py_modules=['DataSubmitter','DataSubmitterImages','DataGet'],
     version='20180425a',
     description='Automated data submission program for ASCII to mongo',
     long_description= """ Automated data submission program for ASCII to mongo """,
