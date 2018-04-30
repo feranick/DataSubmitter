@@ -4,7 +4,7 @@
 **********************************************************
 *
 * DataSubmitter_images
-* version: 20180430a
+* version: 20180430b
 *
 * By: Nicola Ferralis <feranick@hotmail.com>
 *
@@ -163,8 +163,8 @@ class DataSubmitterMongoDB:
     def connectDB(self):
         from pymongo import MongoClient
         client = MongoClient(self.config.DbHostname, int(self.config.DbPortNumber))
-        auth_status = client[self.config.DbName].authenticate(self.config.DbUsername,
-            self.config.DbPassword, mechanism='SCRAM-SHA-1')
+        auth_status = client[self.config.DbName].authenticate(self.config.DbUsername, 
+            self.config.DbPassword)
         print("\n Pushing to MongoDB: Authentication status = {0}".format(auth_status))
         return client
 
@@ -179,7 +179,8 @@ class DataSubmitterMongoDB:
         client = self.connectDB()
         db = client[self.config.DbName]
         try:
-            db_entry = db.EnvTrack.insert_one(json.loads(self.jsonData))
+            #db_entry = db.dataSubmitterImages.insert_one(json.loads(self.jsonData))
+            db_entry = db.dataSubmitterImages.insert_one(self.jsonData)
             print(" Data entry successful (id:",db_entry.inserted_id,")\n")
         except:
             print(" Data entry failed.\n")
@@ -232,8 +233,8 @@ class Configuration():
     def defineConfDM(self):
         self.conf['DM'] = {
             'DbHostname' : "localhost",
-            'DbPortNumber' : "7101",
-            'DbName' : "Tata",
+            'DbPortNumber' : "27017",
+            'DbName' : "DataSubmitter",
             'DbUsername' : "user1",
             'DbPassword' : "user1",
             }

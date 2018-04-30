@@ -4,7 +4,7 @@
 **********************************************************
 *
 * DataSubmitter
-* version: 20180430a
+* version: 20180430b
 *
 * By: Nicola Ferralis <feranick@hotmail.com>
 *
@@ -185,7 +185,7 @@ class DataSubmitterMongoDB:
         client = self.connectDB()
         db = client[self.config.DbName]
         try:
-            db_entry = db.EnvTrack.insert_one(json.loads(self.jsonData))
+            db_entry = db.dataSubmitter.insert_one(json.loads(self.jsonData))
             print(" Data entry successful (id:",db_entry.inserted_id,")\n")
         except:
             print(" Data entry failed.\n")
@@ -238,8 +238,8 @@ class Configuration():
     def defineConfDM(self):
         self.conf['DM'] = {
             'DbHostname' : "localhost",
-            'DbPortNumber' : "7101",
-            'DbName' : "Tata",
+            'DbPortNumber' : "27017",
+            'DbName' : "DataSubmitter",
             'DbUsername' : "user1",
             'DbPassword' : "user1",
             }
