@@ -4,7 +4,7 @@
 **********************************************************
 *
 * DataSubmitter
-* version: 20180425a
+* version: 20180430a
 *
 * By: Nicola Ferralis <feranick@hotmail.com>
 *
@@ -263,7 +263,7 @@ class Configuration():
             self.equipment = self.instrumentationConfig['equipment']
 
             self.headers = eval(self.dataConfig['headers'])
-            self.dataType = self.dataConfig['dataType']
+            self.dataType = eval(self.dataConfig['dataType'])
             
             self.DbHostname = self.dmConfig['DbHostname']
             self.DbPortNumber = self.conf.getint('DM','DbPortNumber')
