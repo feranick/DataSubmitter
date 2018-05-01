@@ -3,10 +3,10 @@ from setuptools import setup, find_packages
 setup(
     name='DataSubmitter',
     packages=find_packages(),
-    install_requires=['numpy', 'pandas','pymongo','watchdog','base64'],
+    install_requires=['numpy', 'pandas','pymongo','watchdog'],
     entry_points={'console_scripts' : ['DataSubmitter=DataSubmitter:DataSubmitter',
         'DataGet=DataGet:DataGet']},
-    py_modules=['DataSubmitter','DataGet'],
+    py_modules=['DataSubmitter','DataGet','libDataSub'],
     version='20180425a',
     description='Automated data submission program for ASCII to mongo',
     long_description= """ Automated data submission program for ASCII to mongo """,
