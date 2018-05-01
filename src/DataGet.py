@@ -4,7 +4,7 @@
 **********************************************************
 *
 * DataGet
-* version: 20180530a
+* version: 20180530b
 *
 * By: Nicola Ferralis <feranick@hotmail.com>
 *
