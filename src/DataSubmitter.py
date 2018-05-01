@@ -4,7 +4,7 @@
 **********************************************************
 *
 * DataSubmitter
-* version: 20180430b
+* version: 20180430c
 *
 * By: Nicola Ferralis <feranick@hotmail.com>
 *
@@ -19,7 +19,7 @@ def DataSubmitter():
     main()
 #***************************************************
 
-import configparser, logging, sys, math, json, os.path, time
+import configparser, logging, sys, math, json, os.path, time, base64
 import pandas as pd
 import numpy as np
 from pathlib import Path
@@ -71,11 +71,11 @@ class NewFileHandler(FileSystemEventHandler):
         #************************************
         ''' Push to MongoDB '''
         #************************************
-        try:
-            conn = DataSubmitterMongoDB(jsonData)
-            conn.pushToMongoDB()
-        except:
-            print("\n Submission to database failed!\n")
+        #try:
+        conn = DataSubmitterMongoDB(jsonData)
+        conn.pushToMongoDB()
+        #except:
+        #    print("\n Submission to database failed!\n")
 
 #************************************
 ''' Class DataCollector '''
@@ -93,30 +93,43 @@ class DataCollector:
         self.ip = getIP()
         self.data = []
         self.header = config.headers
+        self.encoding = config.encoding
         self.type = config.dataType
-
+        if self.type == 0:
+            print(" Processing images/binary")
+        else:
+            print(" Processing text/ASCII")
+    
     #************************************
     ''' Collect Data '''
     #************************************
     def getData(self):
-        self.data.extend([self.institution, self.lab, self.equipment, self.ip, self.date, self.time, self.file])
+        self.data.extend([self.institution, self.lab, self.equipment, self.ip, self.date,
+            self.time, self.file, self.encoding, self.type])
         try:
-            with open(self.file) as f:
-                lines = np.loadtxt(f, unpack=True)
+            with open(self.file, "rb") as f:
+                if self.type == 0:
+                    lines = [base64.b64encode(f.read())] # uncomment for images/binary
+                else:
+                    lines = np.loadtxt(f, unpack=True) # uncomment for text/ASCII
             self.data.extend(["True"])
             self.data.extend(lines)
         except:
             self.data.extend(["False"])
-            self.data.extend([[0.0, 0.0], [0.0, 0.0]])
+            if self.type == 0:
+                self.data.extend([[0.0, 0.0]])
+            else:
+                self.data.extend([[0.0, 0.0], [0.0, 0.0]])
+        print(self.data)
         return self.data
         
-    def formatData(self, type):
+    def formatData(self):
         jsonData = {}
         for i in range(len(self.header)):
-            jsonData.update({self.header[i] : self.data[8+i]})
-        if type == 0:
+            jsonData.update({self.header[i] : self.data[10+i]})
+        if self.type == 0:  # for images/binary
             listData = jsonData
-        else:
+        else:  # for text/ASCII
             import pandas as pd
             dfData = pd.DataFrame(jsonData)
             dfData = dfData[[self.header[0], self.header[1]]]
@@ -135,11 +148,16 @@ class DataCollector:
             'date' : self.data[4],
             'time' : self.data[5],
             'file' : self.data[6],
-            'success' : self.data[7],
+            'encoding' : self.data[7],
+            'type' : self.data[8],
+            'success' : self.data[9],
             }
-        jsonData.update(self.formatData(self.type))
+        jsonData.update(self.formatData())
         print(" JSON Data:\n",jsonData)
-        return json.dumps(jsonData)
+        if self.type == 0:
+            return (jsonData)
+        else:
+            return json.dumps(jsonData)
 
     #************************************
     ''' Print Values on screen '''
@@ -152,9 +170,11 @@ class DataCollector:
         print(" Date: ", self.date)
         print(" Time: ", self.time)
         print(" File: ", self.file)
-        print(" Success: ", self.data[7])
+        print(" Encoding: ", self.encoding)
+        print(" Type: ", self.type)
+        print(" Success: ", self.data[9])
         for i in range(len(self.header)):
-            print(" {0} = {1} ".format(self.header[i], self.data[8+i]))
+            print(" {0} = {1} ".format(self.header[i], self.data[10+i]))
         print("")
 
 #************************************
@@ -164,7 +184,10 @@ class DataSubmitterMongoDB:
     def __init__(self, jsonData):
         self.config = Configuration()
         self.config.readConfig(self.config.configFile)
-        self.jsonData = jsonData
+        if self.config.dataType == 0:
+            self.jsonData = jsonData
+        else:
+            self.jsonData = json.loads(jsonData)
 
     def connectDB(self):
         from pymongo import MongoClient
@@ -184,7 +207,7 @@ class DataSubmitterMongoDB:
         client = self.connectDB()
         db = client[self.config.DbName]
         try:
-            db_entry = db.dataSubmitter.insert_one(json.loads(self.jsonData))
+            db_entry = db.dataSubmitterImages.insert_one(self.jsonData)
             print(" Data entry successful (id:",db_entry.inserted_id,")\n")
         except:
             print(" Data entry failed.\n")
@@ -246,10 +269,21 @@ class Configuration():
             'lab' : 'lab1',
             'equipment' : 'equipment1',
             }
+    # for images/binary
+    '''
     def defineData(self):
         self.conf['Data'] = {
             'headers' : ['header0','header1'],
+            'encoding' : 'text/ASCII',
             'dataType' : 1,
+            }
+    '''
+    # for text/ASCII
+    def defineData(self):
+        self.conf['Data'] = {
+            'headers' : ['image'],
+            'encoding' : 'base64.b64encode',
+            'dataType' : 0,
             }
     def defineConfDM(self):
         self.conf['DM'] = {
@@ -280,6 +314,7 @@ class Configuration():
 
             self.headers = eval(self.dataConfig['headers'])
             self.dataType = eval(self.dataConfig['dataType'])
+            self.encoding = self.dataConfig['encoding']
             
             self.DbHostname = self.dmConfig['DbHostname']
             self.DbPortNumber = self.conf.getint('DM','DbPortNumber')
