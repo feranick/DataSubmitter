@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 setup(
     name='DataSubmitter',
     packages=find_packages(),
-    install_requires=['numpy', 'pandas','pymongo','watchdog',],
+    install_requires=['numpy', 'pandas','pymongo','watchdog','base64'],
     entry_points={'console_scripts' : ['DataSubmitter=DataSubmitter:DataSubmitter',
         'DataSubmitterImages=DataSubmitterImages:DataSubmitterImages',
         'DataGet=DataGet:DataGet']},
