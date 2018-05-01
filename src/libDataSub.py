@@ -3,7 +3,7 @@
 '''
 **********************************************************
 *
-* DataSubmitter
+* libDataSub
 * version: 20180501a
 *
 * By: Nicola Ferralis <feranick@hotmail.com>
@@ -20,7 +20,6 @@ from datetime import datetime
 from watchdog.observers import Observer
 from watchdog.events import LoggingEventHandler
 from watchdog.events import FileSystemEvent, FileCreatedEvent, FileSystemEventHandler
-
 
 #************************************************
 ''' Class NewFileHandler '''
