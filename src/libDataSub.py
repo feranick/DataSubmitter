@@ -38,11 +38,11 @@ class NewFileHandler(FileSystemEventHandler):
         #************************************
         ''' Push to MongoDB '''
         #************************************
-        #try:
-        conn = DataSubmitterMongoDB(jsonData)
-        conn.pushToMongoDB()
-        #except:
-        #    print("\n Submission to database failed!\n")
+        try:
+            conn = DataSubmitterMongoDB(jsonData)
+            conn.pushToMongoDB()
+        except:
+            print("\n Submission to database failed!\n")
 
 #************************************
 ''' Class DataCollector '''

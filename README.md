@@ -1,6 +1,6 @@
 # DataSubmitter
 ## Plugin for data submission into MongoDB
-Automated data submission program for ASCII to mongo
+Automated data submission/retrieval for ASCII and images into mongoDB. DataSubmitter provides an automated data submission and conversion (customizable for both text/ASCII and binary/images). Binary data is converted into text using base64 encoding. DataGet can be used to retrieve and restore data (both text and binary) from mongodb. 
 
 ## Usage
 ### From local file version.
@@ -17,6 +17,30 @@ Install directly:
 Launch from the terminal in the folder with data:
 
     DataSubmitter
+    DataGet
+    
+### MongoDB: Quick installation
+While this is far from being a comprehensive guide, this will get you going. Install the required packages according to your OS. Then edit the config file:
+
+    sudo nano /etc/mongodb.conf
+    
+to make sure the correct IP and port are selected. Restart the ```mongodb``` service. Then run:
+
+    mongo
+
+Set administration rights and authentication:
+
+    use admin
+    db.createUser({user:'admin',pwd:'carboniscool',roles:[{role:"userAdminAnyDatabase", db:'admin'}]})
+    use DataSubmitter
+    db.createUser({user:'user1',pwd:'user1',roles:[{role:"readWrite", db:'DataSubmitter'}]})
+    quit()
+    
+Make sure the authentication is enabled in the ```mongodb.conf```. Edit the config by uncommenting this line:
+
+    auth = true
+    
+Restart ```mongodb``` service. Use DataSubmitter/DataGet.
 
 ### Launcher    
 The software will be automated through a script (DataSubmitter_launcher.sh). Since the RPi is 
