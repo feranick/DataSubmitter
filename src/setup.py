@@ -7,7 +7,7 @@ setup(
     entry_points={'console_scripts' : ['DataSubmitter=DataSubmitter:DataSubmitter',
         'DataGet=DataGet:DataGet']},
     py_modules=['DataSubmitter','DataGet','libDataSub'],
-    version='20180425a',
+    version='20180501a',
     description='Automated data submission program for ASCII to mongo',
     long_description= """ Automated data submission program for ASCII to mongo """,
     author_email='ferralis@mit.edu',
