@@ -91,7 +91,7 @@ class DataCollector:
         return self.data
         
     def formatData(self):
-        jsonData = {}
+        jsonData = None
         for i in range(len(self.header)):
             jsonData.update({self.header[i] : self.data[10+i]})
         if self.type == 0:  # for images/binary
@@ -174,7 +174,7 @@ class DataSubmitterMongoDB:
         client = self.connectDB()
         db = client[self.config.DbName]
         try:
-            db_entry = db.dataSubmitterImages.insert_one(self.jsonData)
+            db_entry = db.dataSubmitter.insert_one(self.jsonData)
             print(" Data entry successful (id:",db_entry.inserted_id,")\n")
         except:
             print(" Data entry failed.\n")
@@ -183,18 +183,18 @@ class DataSubmitterMongoDB:
         from bson.objectid import ObjectId
         client = self.connectDB()
         db = client[self.config.DbName]
-        db_entry = db.dataSubmitterImages.find_one({"_id": ObjectId(id)})
+        db_entry = db.dataSubmitter.find_one({"_id": ObjectId(id)})
         print("\n Restoring file: :",db_entry['file'][2:])
         with open(db_entry['file'][2:], "wb") as fh:
-            fh.write(base64.b64decode(db_entry['image']))
+            fh.write(base64.b64decode(db_entry[self.config.headers[0]]))
 
     def getByFile(self, file):
         client = self.connectDB()
         db = client[self.config.DbName]
-        db_entry = db.dataSubmitterImages.find_one({"file": "./"+file+".png"})
+        db_entry = db.dataSubmitter.find_one({"file": "./"+file})
         print("\n Restoring file: :",db_entry['file'][2:])
         with open(db_entry['file'][2:], "wb") as fh:
-            fh.write(base64.b64decode(db_entry['image']))
+            fh.write(base64.b64decode(db_entry[self.config.headers[0]]))
 
 ####################################################################
 # Configuration

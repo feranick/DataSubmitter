@@ -19,7 +19,8 @@ def DataGet():
     main()
 #***************************************************
 
-import configparser, logging, sys, math, json, os.path, time, base64
+import configparser, logging, sys, math
+import json, os.path, time, base64, getopt
 import pandas as pd
 import numpy as np
 from pathlib import Path
@@ -35,23 +36,43 @@ def main():
         print("Configuration file does not exist: Creating one.")
         conf.createConfig()
     conf.readConfig(conf.configFile)
-
-    #************************************
-    ''' Launch observer'''
-    #************************************
     path = conf.dataFolder
-    #path = sys.argv[1] if len(sys.argv) > 1 else '.'
+    
+    try:
+        opts, args = getopt.getopt(sys.argv[1:],
+                                   "if:", ["id", "file"])
+    except:
+        usage()
+        sys.exit(2)
+
+    if opts == []:
+        usage()
+        sys.exit(2)
 
     #************************************
     ''' Push to MongoDB '''
     #************************************
     try:
-        jsonData={}
-        conn = DataSubmitterMongoDB(jsonData)
-        #conn.getById(sys.argv[1])
-        conn.getByFile(sys.argv[1])
-    except:
-        print("\n Getting entry from database failed!\n")
+        for o, a in opts:
+            jsonData={}
+            conn = DataSubmitterMongoDB(jsonData)
+            print(sys.argv[2])
+            if o in ("-i" , "--id"):
+                conn.getById(sys.argv[2])
+            if o in ("-f" , "--file"):
+                conn.getByFile(sys.argv[2])
+        except:
+            print("\n Getting entry from database failed!\n")
+
+#************************************
+''' Lists the program usage '''
+#************************************
+def usage():
+    print('\n Usage:\n')
+    print(' Query based on ID:')
+    print('  python3 DataGet.py -i <ObjectId>\n')
+    print(' Query based on file name:')
+    print('  python3 DataGet.py -f <filename>\n')
 
 #************************************
 ''' Main initialization routine '''
