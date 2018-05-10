@@ -94,7 +94,10 @@ class DataCollector:
         return self.data
         
     def formatData(self):
-        jsonData = None
+        if self.type == 0:  # for images/binary
+            jsonData = None
+        else:
+            jsonData = {}
         for i in range(len(self.header)):
             jsonData.update({self.header[i] : self.data[12+i]})
         if self.type == 0:  # for images/binary
@@ -118,8 +121,8 @@ class DataCollector:
             'date' : self.data[4],
             'time' : self.data[5],
             'file' : self.data[6],
-            'itemId': self.data[7],
-            'substrate' : self.data[8],
+            'substrate': self.data[7],
+            'itemId' : self.data[8],
             'encoding' : self.data[9],
             'type' : self.data[10],
             'success' : self.data[11],
@@ -146,9 +149,9 @@ class DataCollector:
         print(" Sample: ", self.sample)
         print(" Encoding: ", self.encoding)
         print(" Type: ", self.type)
-        print(" Success: ", self.data[9])
+        print(" Success: ", self.data[11])
         for i in range(len(self.header)):
-            print(" {0} = {1} ".format(self.header[i], self.data[10+i]))
+            print(" {0} = {1} ".format(self.header[i], self.data[12+i]))
         print("")
 
 #************************************
@@ -244,7 +247,7 @@ class Configuration():
             'equipment' : 'equipment1',
             }
     # for images/binary
-    '''
+    
     def defineData(self):
         self.conf['Data'] = {
             'headers' : ['header0','header1'],
@@ -259,6 +262,7 @@ class Configuration():
             'encoding' : 'base64.b64encode',
             'dataType' : 0,
             }
+    '''
     def defineConfDM(self):
         self.conf['DM'] = {
             'DbHostname' : "localhost",
