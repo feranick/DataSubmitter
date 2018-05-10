@@ -12,7 +12,7 @@
 '''
 #print(__doc__)
 
-import configparser, logging, sys, math, json, os.path, time, base64
+import configparser, logging, sys, math, json, os.path, time, base64, csv
 import pandas as pd
 import numpy as np
 from pathlib import Path
@@ -77,11 +77,16 @@ class DataCollector:
         self.data.extend([self.institution, self.lab, self.equipment, self.ip, self.date,
             self.time, self.file, self.sample, self.itemId, self.encoding, self.type])
         try:
-            with open(self.file, "rb") as f:
-                if self.type == 0:
+            if self.type == 0:
+                with open(self.file, "rb") as f:
                     lines = [base64.b64encode(f.read())] # uncomment for images/binary
-                else:
+            elif self.type == 1:
+                with open(self.file, "rb") as f:
                     lines = np.loadtxt(f, unpack=True) # uncomment for text/ASCII
+            elif self.type == 2:
+                df = pd.read_csv(self.file, usecols=[1,2])
+                lines = [df.iloc[:,0:1].values.tolist(),df.iloc[:,1:2].values.tolist()]
+            print(lines)
             self.data.extend(["True"])
             self.data.extend(lines)
         except:
@@ -103,7 +108,6 @@ class DataCollector:
         if self.type == 0:  # for images/binary
             listData = jsonData
         else:  # for text/ASCII
-            import pandas as pd
             dfData = pd.DataFrame(jsonData)
             dfData = dfData[[self.header[0], self.header[1]]]
             listData = dict(dfData.to_dict(orient='split'))
@@ -246,8 +250,16 @@ class Configuration():
             'lab' : 'lab1',
             'equipment' : 'equipment1',
             }
+    '''
     # for images/binary
-    
+    def defineData(self):
+        self.conf['Data'] = {
+            'headers' : ['image'],
+            'encoding' : 'base64.b64encode',
+            'dataType' : 0,
+            }
+    '''
+    # for text/ASCII
     def defineData(self):
         self.conf['Data'] = {
             'headers' : ['header0','header1'],
@@ -258,9 +270,9 @@ class Configuration():
     # for text/ASCII
     def defineData(self):
         self.conf['Data'] = {
-            'headers' : ['image'],
-            'encoding' : 'base64.b64encode',
-            'dataType' : 0,
+            'headers' : ['header0','header1'],
+            'encoding' : 'text/CSV',
+            'dataType' : 2,
             }
     '''
     def defineConfDM(self):
