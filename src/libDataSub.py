@@ -4,7 +4,7 @@
 **********************************************************
 *
 * libDataSub
-* version: 20180501a
+* version: 20180510a
 *
 * By: Nicola Ferralis <feranick@hotmail.com>
 *
@@ -54,7 +54,10 @@ class DataCollector:
         self.institution = config.institution
         self.lab = config.lab
         self.equipment = config.equipment
-        self.file = file
+        self.file = file[2:]
+        self.tag = self.file[:11]
+        self.itemId = self.tag[-1]
+        self.sample = self.tag[:-1]
         self.date = time.strftime("%Y%m%d")
         self.time = time.strftime("%H:%M:%S")
         self.ip = getIP()
@@ -72,7 +75,7 @@ class DataCollector:
     #************************************
     def getData(self):
         self.data.extend([self.institution, self.lab, self.equipment, self.ip, self.date,
-            self.time, self.file, self.encoding, self.type])
+            self.time, self.file, self.sample, self.itemId, self.encoding, self.type])
         try:
             with open(self.file, "rb") as f:
                 if self.type == 0:
@@ -93,7 +96,7 @@ class DataCollector:
     def formatData(self):
         jsonData = None
         for i in range(len(self.header)):
-            jsonData.update({self.header[i] : self.data[10+i]})
+            jsonData.update({self.header[i] : self.data[12+i]})
         if self.type == 0:  # for images/binary
             listData = jsonData
         else:  # for text/ASCII
@@ -115,9 +118,11 @@ class DataCollector:
             'date' : self.data[4],
             'time' : self.data[5],
             'file' : self.data[6],
-            'encoding' : self.data[7],
-            'type' : self.data[8],
-            'success' : self.data[9],
+            'itemId': self.data[7],
+            'substrate' : self.data[8],
+            'encoding' : self.data[9],
+            'type' : self.data[10],
+            'success' : self.data[11],
             }
         jsonData.update(self.formatData())
         print(" JSON Data:\n",jsonData)
@@ -137,6 +142,8 @@ class DataCollector:
         print(" Date: ", self.date)
         print(" Time: ", self.time)
         print(" File: ", self.file)
+        print(" ItemID: ", self.itemId)
+        print(" Sample: ", self.sample)
         print(" Encoding: ", self.encoding)
         print(" Type: ", self.type)
         print(" Success: ", self.data[9])
@@ -205,7 +212,7 @@ class Configuration():
         self.home = str(Path.cwd())+"/"
         self.configFile = self.home+"DataSubmitter.ini"
         self.generalFolder = self.home+"DataSubmitter/"
-        Path(self.generalFolder).mkdir(parents=True, exist_ok=True)
+        #Path(self.generalFolder).mkdir(parents=True, exist_ok=True)
         self.logFile = self.generalFolder+"DataSubmitter.log"
         self.conf = configparser.ConfigParser()
         self.conf.optionxform = str
