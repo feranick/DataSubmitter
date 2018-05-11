@@ -4,7 +4,7 @@
 **********************************************************
 *
 * libDataSub
-* version: 20180510a
+* version: 20180511a
 *
 * By: Nicola Ferralis <feranick@hotmail.com>
 *
@@ -84,7 +84,7 @@ class DataCollector:
                 with open(self.file, "rb") as f:
                     lines = np.loadtxt(f, unpack=True) # uncomment for text/ASCII
             elif self.type == 2:
-                df = pd.read_csv(self.file, usecols=[1,2])
+                df = pd.read_csv(self.file, usecols=[11,12])
                 lines = [df.iloc[:,0:1].values.tolist(),df.iloc[:,1:2].values.tolist()]
             print(lines)
             self.data.extend(["True"])
@@ -258,7 +258,7 @@ class Configuration():
             'encoding' : 'base64.b64encode',
             'dataType' : 0,
             }
-    '''
+    
     # for text/ASCII
     def defineData(self):
         self.conf['Data'] = {
@@ -267,14 +267,14 @@ class Configuration():
             'dataType' : 1,
             }
     '''
-    # for text/ASCII
+    # for text/csv
     def defineData(self):
         self.conf['Data'] = {
             'headers' : ['header0','header1'],
             'encoding' : 'text/CSV',
             'dataType' : 2,
             }
-    '''
+    
     def defineConfDM(self):
         self.conf['DM'] = {
             'DbHostname' : "localhost",
