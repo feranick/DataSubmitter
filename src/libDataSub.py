@@ -65,6 +65,7 @@ class DataCollector:
         self.header = config.headers
         self.encoding = config.encoding
         self.type = config.dataType
+        self.ncols = config.ncols
         if self.type == 0:
             print(" Processing images/binary")
         else:
@@ -84,8 +85,8 @@ class DataCollector:
                 with open(self.file, "rb") as f:
                     lines = np.loadtxt(f, unpack=True) # uncomment for text/ASCII
             elif self.type == 2:
-                df = pd.read_csv(self.file, usecols=[11,12])
-                lines = df.iloc[:,0:2].T.values
+                df = pd.read_csv(self.file, usecols=self.ncols)
+                lines = df.iloc[:,0:len(self.ncols)].T.values
             print(lines)
             self.data.extend(["True"])
             self.data.extend(lines)
@@ -257,6 +258,7 @@ class Configuration():
             'headers' : ['image'],
             'encoding' : 'base64.b64encode',
             'dataType' : 0,
+            'ncols': [0,1],
             }
     
     # for text/ASCII
@@ -265,6 +267,7 @@ class Configuration():
             'headers' : ['header0','header1'],
             'encoding' : 'text/ASCII',
             'dataType' : 1,
+            'ncols': [0,1],
             }
     '''
     # for text/csv
@@ -273,6 +276,7 @@ class Configuration():
             'headers' : ['header0','header1'],
             'encoding' : 'text/CSV',
             'dataType' : 2,
+            'ncols': [11,12],
             }
     
     def defineConfDM(self):
@@ -305,6 +309,7 @@ class Configuration():
             self.headers = eval(self.dataConfig['headers'])
             self.dataType = eval(self.dataConfig['dataType'])
             self.encoding = self.dataConfig['encoding']
+            self.ncols = eval(self.dataConfig['ncols'])
             
             self.DbHostname = self.dmConfig['DbHostname']
             self.DbPortNumber = self.conf.getint('DM','DbPortNumber')
