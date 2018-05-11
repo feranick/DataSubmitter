@@ -85,7 +85,7 @@ class DataCollector:
                     lines = np.loadtxt(f, unpack=True) # uncomment for text/ASCII
             elif self.type == 2:
                 df = pd.read_csv(self.file, usecols=[11,12])
-                lines = [df.iloc[:,0:1].values.tolist(),df.iloc[:,1:2].values.tolist()]
+                lines = df.iloc[:,0:2].T.values
             print(lines)
             self.data.extend(["True"])
             self.data.extend(lines)
