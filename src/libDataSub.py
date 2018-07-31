@@ -4,7 +4,7 @@
 **********************************************************
 *
 * libDataSub
-* version: 20180511a
+* version: 20180731a
 *
 * By: Nicola Ferralis <feranick@hotmail.com>
 *
@@ -22,27 +22,43 @@ from watchdog.events import LoggingEventHandler
 from watchdog.events import FileSystemEvent, FileCreatedEvent, FileSystemEventHandler
 
 #************************************************
+''' RoutineFileHandler method'''
+#************************************************
+def RoutineFileHandler(file):
+    #************************************
+    ''' Manage data'''
+    #************************************
+    dc = DataCollector(file)
+    data = dc.getData()
+    dc.printUI()
+    jsonData = dc.makeJson()
+    
+    #************************************
+    ''' Push to MongoDB '''
+    #************************************
+    try:
+        conn = DataSubmitterMongoDB(jsonData)
+        conn.pushToMongoDB()
+    except:
+        print("\n Submission to database failed!\n")
+        
+#************************************************
 ''' Class NewFileHandler '''
 ''' Submission method, once data is detected '''
 #************************************************
 class NewFileHandler(FileSystemEventHandler):
     def on_created(self, event):
-        #************************************
-        ''' Manage data'''
-        #************************************
-        dc = DataCollector(event.src_path[:])
-        data = dc.getData()
-        dc.printUI()
-        jsonData = dc.makeJson()
-    
-        #************************************
-        ''' Push to MongoDB '''
-        #************************************
-        try:
-            conn = DataSubmitterMongoDB(jsonData)
-            conn.pushToMongoDB()
-        except:
-            print("\n Submission to database failed!\n")
+        RoutineFileHandler(event.src_path[:])
+
+#************************************************
+''' Class ManualFileHandler '''
+''' Submission method, manual '''
+#************************************************
+class ManualFileHandler:
+    def __init__(self, file):
+        self.file = file
+    def run(self):
+        RoutineFileHandler(self.file)
 
 #************************************
 ''' Class DataCollector '''
@@ -54,10 +70,10 @@ class DataCollector:
         self.institution = config.institution
         self.lab = config.lab
         self.equipment = config.equipment
-        self.file = file[2:]
-        self.tag = self.file[:11]
-        self.itemId = self.tag[-1]
-        self.sample = self.tag[:-1]
+        self.file = file
+        self.tag = self.file
+        self.itemId = self.tag
+        self.sample = self.tag
         self.date = time.strftime("%Y%m%d")
         self.time = time.strftime("%H:%M:%S")
         self.ip = getIP()
