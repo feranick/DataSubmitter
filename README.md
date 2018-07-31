@@ -42,7 +42,7 @@ Make sure the authentication is enabled in the ```mongodb.conf```. Edit the conf
     
 Restart ```mongodb``` service. Use DataSubmitter/DataGet.
 
-### Launcher    
+### Launcher (Obsolete, no longer supported)
 The software will be automated through a script (DataSubmitter_launcher.sh). Since the RPi is 
 connected online via WiFi-DHCP, the IP may change. Through this script, the IP is collected
 on boot and saved on a dedicated server. This is achieved by adding the following to /etc/rc.local:
