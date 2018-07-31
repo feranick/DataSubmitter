@@ -4,7 +4,7 @@
 **********************************************************
 *
 * DataGet
-* version: 20180530b
+* version: 20180731a
 *
 * By: Nicola Ferralis <feranick@hotmail.com>
 *
@@ -61,8 +61,8 @@ def main():
                 conn.getById(sys.argv[2])
             if o in ("-f" , "--file"):
                 conn.getByFile(sys.argv[2])
-        except:
-            print("\n Getting entry from database failed!\n")
+    except:
+        print("\n Getting entry from database failed!\n")
 
 #************************************
 ''' Lists the program usage '''
