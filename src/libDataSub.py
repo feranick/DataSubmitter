@@ -4,7 +4,7 @@
 **********************************************************
 *
 * libDataSub
-* version: 20180731a
+* version: 20190228c
 *
 * By: Nicola Ferralis <feranick@hotmail.com>
 *
@@ -29,18 +29,22 @@ def RoutineFileHandler(file):
     ''' Manage data'''
     #************************************
     dc = DataCollector(file)
-    data = dc.getData()
-    dc.printUI()
-    jsonData = dc.makeJson()
+    data, validFile = dc.getData()
+    if validFile:
+        dc.printUI()
+        jsonData, sub = dc.makeJson()
     
-    #************************************
-    ''' Push to MongoDB '''
-    #************************************
-    try:
-        conn = DataSubmitterMongoDB(jsonData)
-        conn.pushToMongoDB()
-    except:
-        print("\n Submission to database failed!\n")
+        #************************************
+        ''' Push to MongoDB '''
+        #************************************
+        try:
+            conn = DataSubmitterMongoDB(jsonData)
+            conn.checkCreateLotDM(sub)
+            conn.pushToMongoDB()
+        except:
+            print("\n Submission to database failed!\n")
+    else:
+        print(" Invalid file\n")
         
 #************************************************
 ''' Class NewFileHandler '''
@@ -67,16 +71,16 @@ class DataCollector:
     def __init__(self, file):
         config = Configuration()
         config.readConfig(config.configFile)
-        self.institution = config.institution
-        self.lab = config.lab
-        self.equipment = config.equipment
         self.file = file
-        self.tag = self.file
-        self.itemId = self.tag
-        self.sample = self.tag
-        self.date = time.strftime("%Y%m%d")
-        self.time = time.strftime("%H:%M:%S")
-        self.ip = getIP()
+        self.extension = config.extension
+        self.equipment = config.equipment
+        self.substrate = os.path.relpath(file, config.dataFolder)[:10]
+        self.name = config.name
+        self.architecture = config.architecture
+        self.measType = config.measType
+        self.itemId = config.itemId
+        self.date = [time.strftime("%Y-%m-%d")]
+        self.time = [time.strftime("%H-%M-%S")]
         self.data = []
         self.header = config.headers
         self.encoding = config.encoding
@@ -91,8 +95,13 @@ class DataCollector:
     ''' Collect Data '''
     #************************************
     def getData(self):
-        self.data.extend([self.institution, self.lab, self.equipment, self.ip, self.date,
-            self.time, self.file, self.sample, self.itemId, self.encoding, self.type])
+        self.data.extend([self.equipment, self.substrate,self.name,
+        self.measType, self.itemId, self.date, self.time, self.file, self.encoding, self.type])
+        self.lenData = len(self.data)+1
+        
+        if os.path.splitext(self.file)[-1][1:] != self.extension:
+            return None, False
+        
         try:
             if self.type == 0:
                 with open(self.file, "rb") as f:
@@ -112,8 +121,8 @@ class DataCollector:
                 self.data.extend([[0.0, 0.0]])
             else:
                 self.data.extend([[0.0, 0.0], [0.0, 0.0]])
-        print(self.data)
-        return self.data
+        #print(self.data)
+        return self.data, True
         
     def formatData(self):
         if self.type == 0:  # for images/binary
@@ -121,7 +130,7 @@ class DataCollector:
         else:
             jsonData = {}
         for i in range(len(self.header)):
-            jsonData.update({self.header[i] : self.data[12+i]})
+            jsonData.update({self.header[i] : self.data[self.lenData+i]})
         if self.type == 0:  # for images/binary
             listData = jsonData
         else:  # for text/ASCII
@@ -135,45 +144,50 @@ class DataCollector:
         
     def makeJson(self):
         jsonData = {
-            'institution' : self.data[0],
-            'lab' : self.data[1],
-            'equipment' : self.data[2],
-            'IP' : self.data[3],
-            'date' : self.data[4],
-            'time' : self.data[5],
-            'file' : self.data[6],
-            'substrate': self.data[7],
-            'itemId' : self.data[8],
-            'encoding' : self.data[9],
-            'type' : self.data[10],
-            'success' : self.data[11],
+            'equipment' : self.data[0],
+            'substrate' : self.data[1],
+            'name' : self.data[2],
+            'measType' : self.data[3],
+            'itemId' : self.data[4],
+            'date' : self.data[5],
+            'time' : self.data[6],
+            'file' : self.data[7],
+            #'encoding' : self.data[10],
+            #'type' : self.data[11],
+            #'success' : self.data[12],
             }
         jsonData.update(self.formatData())
         print(" JSON Data:\n",jsonData)
         if self.type == 0:
-            return (jsonData)
+            return (jsonData), self.substrate
         else:
-            return json.dumps(jsonData)
+            return json.dumps(jsonData), self.substrate
 
     #************************************
     ''' Print Values on screen '''
     #************************************
     def printUI(self):
-        print("\n Institution: ", self.institution)
-        print(" Lab: ", self.lab)
-        print(" Equipment: ", self.equipment)
-        print(" IP: ", self.ip)
+        print("\n Equipment: ", self.equipment)
+        print(" Substrate: ", self.substrate)
+        print(" Name: ", self.name)
+        #print(" Architecture: ", self.architecture)
+        print(" measType: ", self.measType)
+        print(" itemId: ", self.itemId)
         print(" Date: ", self.date)
         print(" Time: ", self.time)
         print(" File: ", self.file)
         print(" ItemID: ", self.itemId)
-        print(" Sample: ", self.sample)
         print(" Encoding: ", self.encoding)
         print(" Type: ", self.type)
-        print(" Success: ", self.data[11])
+        #print(" Success: ", self.data[11])
         for i in range(len(self.header)):
-            print(" {0} = {1} ".format(self.header[i], self.data[12+i]))
+            print(" {0} = {1} ".format(self.header[i], self.data[self.lenData+i]))
         print("")
+
+    def archSubstrate(self, ind):
+        if ind == 0:
+            name = "0_blank"
+            return name, {'substrates': {'isCollapsed': False, 'label': 'deviceID', 'material': '', 'flex': False, 'area': '', 'layers': [], 'attachments': [], 'devices': [{'size': '', 'measurements': []}, {'size': '', 'measurements': []}, {'size': '', 'measurements': []}, {'size': '', 'measurements': []}, {'size': '', 'measurements': []}, {'size': '', 'measurements': []}]}}
 
 #************************************
 ''' Class Database '''
@@ -205,10 +219,31 @@ class DataSubmitterMongoDB:
         client = self.connectDB()
         db = client[self.config.DbName]
         try:
-            db_entry = db.dataSubmitter.insert_one(self.jsonData)
+            db_entry = db.Measurement.insert_one(self.jsonData)
             print(" Data entry successful (id:",db_entry.inserted_id,")\n")
         except:
             print(" Data entry failed.\n")
+
+    # View entry in DM page for substrate/device
+    def checkCreateLotDM(self, deviceID):
+        client = self.connectDB()
+        db = client[self.config.DbName]
+        #try:
+        entry = db.Lot.find_one({'label':deviceID[:8]})
+        if entry:
+            #db.Lot.update_one({ '_id': entry['_id'] },{"$push": self.getArchConfig(deviceID, row, col)}, upsert=False)
+            msg = " Data entry for this batch found in DM. Created substrate: "+deviceID
+        else:
+            print(" No data entry for this substrate found in DM. Creating new one...")
+            jsonData = {'label' : deviceID[:8], 'date' : deviceID[2:8], 'description': '', 'notes': '', 'tags': [], 'substrates': [{'isCollapsed': False, 'label': deviceID, 'material': '', 'flex': False, 'area': '', 'layers': [], 'attachments': [], 'devices': [{'size': '', 'measurements': []}, {'size': '', 'measurements': []}, {'size': '', 'measurements': []}, {'size': '', 'measurements': []}, {'size': '', 'measurements': []}, {'size': '', 'measurements': []}]}]}
+            db_entry = db.Lot.insert_one(json.loads(json.dumps(jsonData)))
+                #db.Lot.update_one({ '_id': db_entry.inserted_id },{"$push": self.getArchConfig(deviceID,row,col)}, upsert=False)
+            msg = " Created batch: " + deviceID[:8] + " and device: "+deviceID
+        print(msg)
+        
+        
+        #except:
+        #    print(" Connection with DM via Mongo cannot be established.")
 
     def getById(self, id):
         from bson.objectid import ObjectId
@@ -232,8 +267,8 @@ class DataSubmitterMongoDB:
 ####################################################################
 class Configuration():
     def __init__(self):
-        #self.home = str(Path.home())+"/"
-        self.home = str(Path.cwd())+"/"
+        self.home = str(Path.home())+"/"
+        #self.home = str(Path.cwd())+"/"
         self.configFile = self.home+"DataSubmitter.ini"
         self.generalFolder = self.home+"DataSubmitter/"
         #Path(self.generalFolder).mkdir(parents=True, exist_ok=True)
@@ -263,9 +298,11 @@ class Configuration():
             }
     def defineInstrumentation(self):
         self.conf['Instrumentation'] = {
-            'institution' : 'institution1',
-            'lab' : 'lab1',
-            'equipment' : 'equipment1',
+            'measType' : 'test',
+            'equipment' : 'test',
+            'name' : 'test',
+            'architecture' : '',
+            'itemId' : '1'
             }
     '''
     # for images/binary
@@ -289,19 +326,20 @@ class Configuration():
     # for text/csv
     def defineData(self):
         self.conf['Data'] = {
-            'headers' : ['header0','header1'],
+            'headers' : ['X','Y'],
             'encoding' : 'text/CSV',
-            'dataType' : 2,
-            'ncols': [11,12],
+            'dataType' : 1,
+            'ncols': [0,1],
+            'extension' : 'txt',
             }
     
     def defineConfDM(self):
         self.conf['DM'] = {
-            'DbHostname' : "localhost",
+            'DbHostname' : "my.site.com",
             'DbPortNumber' : "27017",
-            'DbName' : "DataSubmitter",
-            'DbUsername' : "user1",
-            'DbPassword' : "user1",
+            'DbName' : "test",
+            'DbUsername' : "user",
+            'DbPassword' : "pwd",
             }
 
     # Read configuration file into usable variables
@@ -318,14 +356,17 @@ class Configuration():
             self.loggingFilename = self.sysConfig['loggingFilename']
             self.dataFolder = self.sysConfig['dataFolder']
 
-            self.institution = self.instrumentationConfig['institution']
-            self.lab = self.instrumentationConfig['lab']
             self.equipment = self.instrumentationConfig['equipment']
+            self.name = self.instrumentationConfig['name']
+            self.measType = self.instrumentationConfig['measType']
+            self.architecture = self.instrumentationConfig['architecture']
+            self.itemId = self.instrumentationConfig['itemId']
 
             self.headers = eval(self.dataConfig['headers'])
             self.dataType = eval(self.dataConfig['dataType'])
             self.encoding = self.dataConfig['encoding']
             self.ncols = eval(self.dataConfig['ncols'])
+            self.extension = self.dataConfig['extension']
             
             self.DbHostname = self.dmConfig['DbHostname']
             self.DbPortNumber = self.conf.getint('DM','DbPortNumber')
