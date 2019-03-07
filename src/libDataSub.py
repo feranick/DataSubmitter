@@ -4,7 +4,7 @@
 **********************************************************
 *
 * libDataSub
-* version: 20190228c
+* version: 20190306a
 *
 * By: Nicola Ferralis <feranick@hotmail.com>
 *
@@ -69,120 +69,113 @@ class ManualFileHandler:
 #************************************
 class DataCollector:
     def __init__(self, file):
-        config = Configuration()
-        config.readConfig(config.configFile)
+        self.config = Configuration()
+        self.config.readConfig(self.config.configFile)
         self.file = file
-        self.extension = config.extension
-        self.equipment = config.equipment
-        self.substrate = os.path.relpath(file, config.dataFolder)[:10]
-        self.name = config.name
-        self.architecture = config.architecture
-        self.measType = config.measType
-        self.itemId = config.itemId
+        self.extension = self.config.extension
+        self.substrate = os.path.relpath(file, self.config.dataFolder)[:10]
         self.date = [time.strftime("%Y-%m-%d")]
         self.time = [time.strftime("%H-%M-%S")]
         self.data = []
-        self.header = config.headers
-        self.encoding = config.encoding
-        self.type = config.dataType
-        self.ncols = config.ncols
-        if self.type == 0:
-            print(" Processing images/binary")
+        if self.config.dataType == 0:
+            print("\n Processing images/binary:",self.file)
         else:
-            print(" Processing text/ASCII")
+            print("\n Processing text/ASCII:",self.file)
     
     #************************************
     ''' Collect Data '''
     #************************************
     def getData(self):
-        self.data.extend([self.equipment, self.substrate,self.name,
-        self.measType, self.itemId, self.date, self.time, self.file, self.encoding, self.type])
-        self.lenData = len(self.data)+1
+        self.data.extend([self.config.equipment, self.substrate,self.config.name,
+        self.config.measType, self.config.itemId, self.date, self.time, self.file, self.config.encoding, self.config.dataType])
         
         if os.path.splitext(self.file)[-1][1:] != self.extension:
             return None, False
         
         try:
-            if self.type == 0:
+            if self.config.dataType == 0:
                 with open(self.file, "rb") as f:
-                    lines = [base64.b64encode(f.read())] # uncomment for images/binary
-            elif self.type == 1:
+                    self.lines = [base64.b64encode(f.read())] # uncomment for images/binary
+            elif self.config.dataType == 1:
                 with open(self.file, "rb") as f:
-                    lines = np.loadtxt(f, unpack=True) # uncomment for text/ASCII
-            elif self.type == 2:
+                    self.lines = np.loadtxt(f, unpack=True) # uncomment for text/ASCII
+            elif self.config.dataType == 2:
                 df = pd.read_csv(self.file, usecols=self.ncols)
-                lines = df.iloc[:,0:len(self.ncols)].T.values
-            print(lines)
+                self.lines = df.iloc[:,0:len(self.ncols)].T.values
+            #self.data.extend(["True"])
             self.data.extend(["True"])
-            self.data.extend(lines)
+            self.data.extend(self.lines)
         except:
             self.data.extend(["False"])
-            if self.type == 0:
+            if self.config.dataType == 0:
                 self.data.extend([[0.0, 0.0]])
             else:
                 self.data.extend([[0.0, 0.0], [0.0, 0.0]])
-        #print(self.data)
+        self.lenData = len(self.data)-2
         return self.data, True
         
     def formatData(self):
-        if self.type == 0:  # for images/binary
+        if self.config.dataType == 0:  # for images/binary
             jsonData = None
         else:
             jsonData = {}
-        for i in range(len(self.header)):
-            jsonData.update({self.header[i] : self.data[self.lenData+i]})
-        if self.type == 0:  # for images/binary
+        for i in range(len(self.config.headers)):
+            jsonData.update({self.config.headers[i] : self.data[self.lenData+i]})
+        if self.config.dataType == 0:  # for images/binary
             listData = jsonData
         else:  # for text/ASCII
             dfData = pd.DataFrame(jsonData)
-            dfData = dfData[[self.header[0], self.header[1]]]
+            dfData = dfData[[self.config.headers[0], self.config.headers[1]]]
             listData = dict(dfData.to_dict(orient='split'))
             listData['columnlabel'] = listData.pop('columns')
             listData['output'] = listData.pop('data')
             del listData['index']
         return listData
-        
+    
     def makeJson(self):
         jsonData = {
-            'equipment' : self.data[0],
-            'substrate' : self.data[1],
-            'name' : self.data[2],
-            'measType' : self.data[3],
-            'itemId' : self.data[4],
-            'date' : self.data[5],
-            'time' : self.data[6],
-            'file' : self.data[7],
-            #'encoding' : self.data[10],
-            #'type' : self.data[11],
-            #'success' : self.data[12],
+            'equipment' : self.config.equipment,
+            'substrate' : self.substrate,
+            'name' : self.config.name,
+            'measType' : self.config.measType,
+            'itemId' : self.config.itemId,
+            'date' : self.date,
+            'time' : self.time,
+            'file' : self.file,
+            #'encoding' : self.data[8],
+            #'type' : self.data[9],
+            #'success' : self.data[10],
             }
         jsonData.update(self.formatData())
-        print(" JSON Data:\n",jsonData)
-        if self.type == 0:
+        if self.config.verbose:
+            print(" JSON Data:\n",jsonData)
+        if self.config.dataType == 0:
             return (jsonData), self.substrate
         else:
             return json.dumps(jsonData), self.substrate
+
 
     #************************************
     ''' Print Values on screen '''
     #************************************
     def printUI(self):
-        print("\n Equipment: ", self.equipment)
-        print(" Substrate: ", self.substrate)
-        print(" Name: ", self.name)
-        #print(" Architecture: ", self.architecture)
-        print(" measType: ", self.measType)
-        print(" itemId: ", self.itemId)
-        print(" Date: ", self.date)
-        print(" Time: ", self.time)
-        print(" File: ", self.file)
-        print(" ItemID: ", self.itemId)
-        print(" Encoding: ", self.encoding)
-        print(" Type: ", self.type)
+        if self.config.verbose:
+            print("\n Equipment: ", self.config.equipment)
+            print(" Substrate: ", self.substrate)
+            print(" Name: ", self.config.name)
+            #print(" Architecture: ", self.architecture)
+            print(" measType: ", self.config.measType)
+            print(" itemId: ", self.config.itemId)
+            print(" Date: ", self.date)
+            print(" Time: ", self.time)
+            print(" File: ", self.file)
+            print(" ItemID: ", self.config.itemId)
+            print(" Encoding: ", self.config.encoding)
+            print(" Type: ", self.config.dataType)
         #print(" Success: ", self.data[11])
-        for i in range(len(self.header)):
-            print(" {0} = {1} ".format(self.header[i], self.data[self.lenData+i]))
-        print("")
+            for i in range(len(self.config.headers)):
+                print(" {0} = {1} ".format(self.config.headers[i], self.data[self.lenData+i]))
+            print("")
 
     def archSubstrate(self, ind):
         if ind == 0:
@@ -293,6 +286,7 @@ class Configuration():
         self.conf['System'] = {
             'appVersion' : 0,
             'loggingLevel' : logging.INFO,
+            'verbose' : False,
             'loggingFilename' : self.logFile,
             'dataFolder' : ".",
             }
@@ -354,6 +348,7 @@ class Configuration():
 
             self.loggingLevel = self.sysConfig['loggingLevel']
             self.loggingFilename = self.sysConfig['loggingFilename']
+            self.verbose = self.conf.getboolean('System','verbose')
             self.dataFolder = self.sysConfig['dataFolder']
 
             self.equipment = self.instrumentationConfig['equipment']

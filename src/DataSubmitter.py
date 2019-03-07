@@ -4,7 +4,7 @@
 **********************************************************
 *
 * DataSubmitter
-* version: 20190228c
+* version: 20190306a
 *
 * By: Nicola Ferralis <feranick@hotmail.com>
 *
