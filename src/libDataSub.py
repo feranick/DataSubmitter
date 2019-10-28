@@ -4,7 +4,7 @@
 **********************************************************
 *
 * libDataSub
-* version: 20190306a
+* version: 20191027a
 *
 * By: Nicola Ferralis <feranick@hotmail.com>
 *
@@ -268,6 +268,10 @@ class Configuration():
         self.logFile = self.generalFolder+"DataSubmitter.log"
         self.conf = configparser.ConfigParser()
         self.conf.optionxform = str
+        if os.path.isfile(self.configFile) is False:
+            print("Configuration file does not exist: Creating one.")
+            self.createConfig()
+        self.readConfig(self.configFile)
     
     # Create configuration file
     def createConfig(self):

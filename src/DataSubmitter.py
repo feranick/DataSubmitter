@@ -4,7 +4,7 @@
 **********************************************************
 *
 * DataSubmitter
-* version: 20190306a
+* version: 20191027a
 *
 * By: Nicola Ferralis <feranick@hotmail.com>
 *
@@ -34,10 +34,6 @@ from libDataSub import *
 #************************************
 def main():
     conf = Configuration()
-    if os.path.isfile(conf.configFile) is False:
-        print("Configuration file does not exist: Creating one.")
-        conf.createConfig()
-    conf.readConfig(conf.configFile)
 
     #************************************
     ''' Launch observer'''

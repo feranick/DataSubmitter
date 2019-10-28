@@ -4,7 +4,7 @@
 **********************************************************
 *
 * DataGet
-* version: 20180731a
+* version: 20181027a
 *
 * By: Nicola Ferralis <feranick@hotmail.com>
 *
@@ -32,10 +32,6 @@ from libDataSub import *
 #************************************
 def main():
     conf = Configuration()
-    if os.path.isfile(conf.configFile) is False:
-        print("Configuration file does not exist: Creating one.")
-        conf.createConfig()
-    conf.readConfig(conf.configFile)
     path = conf.dataFolder
     
     try:
