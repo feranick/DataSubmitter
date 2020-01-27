@@ -31,7 +31,7 @@ to make sure the correct IP and port are selected. Restart the ```mongodb``` ser
 Set administration rights and authentication:
 
     use admin
-    db.createUser({user:'admin',pwd:'carboniscool',roles:[{role:"userAdminAnyDatabase", db:'admin'}]})
+    db.createUser({user:'admin',pwd:'pwd',roles:[{role:"userAdminAnyDatabase", db:'admin'}]})
     use DataSubmitter
     db.createUser({user:'user1',pwd:'user1',roles:[{role:"readWrite", db:'DataSubmitter'}]})
     quit()
